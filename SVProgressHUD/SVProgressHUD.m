@@ -69,9 +69,9 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     
     static SVProgressHUD *sharedView;
 #if !defined(SV_APP_EXTENSIONS)
-    dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:[[[UIApplication sharedApplication] delegate] window].bounds]; });
+    dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:self.mainWindow.bounds]; });
 #else
-    dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:[[UIScreen mainScreen] bounds]]; });
+    dispatch_once(&once, ^{ sharedView = [[self alloc] initWithFrame:self.mainWindow bounds]; });
 #endif
     return sharedView;
 }
@@ -428,7 +428,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
         _ringNoTextRadius = 24.0f;
         
         _cornerRadius = 14.0f;
-		
+        
         _graceTimeInterval = 0.0f;
         _minimumDismissTimeInterval = 5.0;
         _maximumDismissTimeInterval = CGFLOAT_MAX;
@@ -651,10 +651,10 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     double animationDuration = 0.0;
 
 #if !defined(SV_APP_EXTENSIONS) && TARGET_OS_IOS
-    self.frame = [[[UIApplication sharedApplication] delegate] window].bounds;
+    self.frame = [SVProgressHUD mainWindow].bounds;
     UIInterfaceOrientation orientation = UIApplication.sharedApplication.statusBarOrientation;
 #elif !defined(SV_APP_EXTENSIONS) && !TARGET_OS_IOS
-    self.frame= [UIApplication sharedApplication].keyWindow.bounds;
+    self.frame= [SVProgressHUD mainWindow].bounds;
 #else
     if (self.viewForExtension) {
         self.frame = self.viewForExtension.frame;
@@ -1033,7 +1033,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
                     
                     // Tell the rootViewController to update the StatusBar appearance
 #if !defined(SV_APP_EXTENSIONS) && TARGET_OS_IOS
-                    UIViewController *rootController = [[UIApplication sharedApplication] keyWindow].rootViewController;
+                    UIViewController *rootController = [SVProgressHUD mainWindow].rootViewController;
                     [rootController setNeedsStatusBarAppearanceUpdate];
 #endif
                     
@@ -1224,7 +1224,7 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
     
     // Update frames
 #if !defined(SV_APP_EXTENSIONS)
-    CGRect windowBounds = [[[UIApplication sharedApplication] delegate] window].bounds;
+    CGRect windowBounds = [SVProgressHUD mainWindow].bounds;
     _controlView.frame = windowBounds;
 #else
     _controlView.frame = [UIScreen mainScreen].bounds;
@@ -1434,15 +1434,15 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 
 #if TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000
 - (UINotificationFeedbackGenerator *)hapticGenerator NS_AVAILABLE_IOS(10_0) {
-	// Only return if haptics are enabled
-	if(!self.hapticsEnabled) {
-		return nil;
-	}
-	
-	if(!_hapticGenerator) {
-		_hapticGenerator = [[UINotificationFeedbackGenerator alloc] init];
-	}
-	return _hapticGenerator;
+    // Only return if haptics are enabled
+    if(!self.hapticsEnabled) {
+        return nil;
+    }
+    
+    if(!_hapticGenerator) {
+        _hapticGenerator = [[UINotificationFeedbackGenerator alloc] init];
+    }
+    return _hapticGenerator;
 }
 #endif
 
@@ -1543,6 +1543,21 @@ static const CGFloat SVProgressHUDLabelSpacing = 8.0f;
 
 - (void)setMaxSupportedWindowLevel:(UIWindowLevel)maxSupportedWindowLevel {
     if (!_isInitializing) _maxSupportedWindowLevel = maxSupportedWindowLevel;
+}
+
++ (UIWindow *)mainWindow {
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+       for (UIWindowScene* windowScene in [UIApplication sharedApplication].connectedScenes) {
+               if (windowScene.activationState == UISceneActivationStateForegroundActive) {
+                   window = windowScene.windows.firstObject;
+                   break;
+               }
+           }
+   }else {
+       window = [[[UIApplication sharedApplication] delegate] window];
+   }
+    return window;
 }
 
 @end
